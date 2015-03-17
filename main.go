@@ -5,35 +5,19 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"log"
 
 	"github.com/kelseyhightower/facter/facts/coreos"
-	"gopkg.in/yaml.v1"
 )
 
-var (
-	outputYAML bool
-)
-
-func init() {
-	flag.BoolVar(&outputYAML, "yaml", false, "Output YAML")
-}
+var m = make(map[string]interface{})
 
 func main() {
-	flag.Parse()
-	facts := make(map[string]interface{})
-	facts["coreos"] = coreos.Run()
-	var data []byte
-	var err error
-	if outputYAML {
-		data, err = yaml.Marshal(facts)
-	} else {
-		data, err = json.MarshalIndent(facts, "", "  ")
-	}
+	coreosFacts := coreos.Run()
+	data, err := json.MarshalIndent(&coreosFacts, " ", "  ")
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(string(data))
+	fmt.Printf("%s\n", data)
 }
