@@ -13,39 +13,69 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
+	"text/template"
 
-	"github.com/kelseyhightower/terminus/facts/system"
+	"github.com/kelseyhightower/terminus/facts"
 )
 
 var (
 	externalFactsDir string
+	format           string
+	formatFile       string
 )
 
 func init() {
-	flag.StringVar(&externalFactsDir, "external-facts-dir", defaultExternalFacts, "path to external facts directory")
+	log.SetFlags(0)
+	flag.StringVar(&externalFactsDir, "external-facts-dir", defaultExternalFacts, "Path to external facts directory.")
+	flag.StringVar(&format, "format", "", "Format the output using the given go template.")
+	flag.StringVar(&formatFile, "format-file", "", "Format the output using the given go template file.")
 }
 
 var defaultExternalFacts = "/etc/terminus/facts.d"
 
-var m map[string]interface{}
-
 func main() {
 	flag.Parse()
 
-	log.SetFlags(0)
-	systemFacts := system.Run()
-	m = make(map[string]interface{})
-	m["system"] = systemFacts
+	systemFacts := getSystemFacts()
 
-	processExternalFacts(externalFactsDir)
-	data, err := json.MarshalIndent(&m, " ", "  ")
+	f := facts.New()
+	f.Add("System", systemFacts)
+
+	processExternalFacts(externalFactsDir, f)
+
+	if format != "" {
+		tmpl, err := template.New("format").Parse(format)
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = tmpl.Execute(os.Stdout, &f.Facts)
+		if err != nil {
+			log.Fatal(err)
+		}
+		os.Exit(0)
+	}
+
+	if formatFile != "" {
+		tmpl, err := template.ParseFiles(formatFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = tmpl.Execute(os.Stdout, &f.Facts)
+		if err != nil {
+			log.Fatal(err)
+		}
+		os.Exit(0)
+	}
+
+	data, err := json.MarshalIndent(&f.Facts, " ", "  ")
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Printf("%s\n", data)
 }
 
-func processExternalFacts(factsDir string) {
+func processExternalFacts(factsDir string, f *facts.Facts) {
 	dir, err := os.Open(factsDir)
 	if err != nil {
 		log.Println(err)
@@ -73,36 +103,50 @@ func processExternalFacts(factsDir string) {
 		}
 	}
 
-	for _, fact := range staticFacts {
-		data, err := ioutil.ReadFile(fact)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-
-		var result interface{}
-		err = json.Unmarshal(data, &result)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-		m[strings.TrimSuffix(filepath.Base(fact), ".json")] = result
+	var wg sync.WaitGroup
+	for _, p := range staticFacts {
+		p := p
+		wg.Add(1)
+		go factsFromFile(p, f, &wg)
 	}
-
-	for _, fact := range executableFacts {
-		out, err := exec.Command(fact).Output()
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-		var result interface{}
-		err = json.Unmarshal(out, &result)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-		m[filepath.Base(fact)] = result
+	for _, p := range executableFacts {
+		p := p
+		wg.Add(1)
+		go factsFromExec(p, f, &wg)
 	}
+	wg.Wait()
+}
+
+func factsFromFile(path string, f *facts.Facts, wg *sync.WaitGroup) {
+	defer wg.Done()
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	var result interface{}
+	err = json.Unmarshal(data, &result)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	f.Add(strings.TrimSuffix(filepath.Base(path), ".json"), result)
+}
+
+func factsFromExec(path string, f *facts.Facts, wg *sync.WaitGroup) {
+	defer wg.Done()
+	out, err := exec.Command(path).Output()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	var result interface{}
+	err = json.Unmarshal(out, &result)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	f.Add(filepath.Base(path), result)
 }
 
 func isExecutable(fi os.FileInfo) bool {

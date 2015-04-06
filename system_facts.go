@@ -1,4 +1,4 @@
-package system
+package main
 
 import (
 	"bufio"
@@ -11,27 +11,27 @@ import (
 	"sync"
 )
 
-// Facts holds the system facts.
-type Facts struct {
-	Architecture   string     `json:"architecture"`
-	BootID         string     `json:"boot_id"`
-	Hostname       string     `json:"hostname"`
-	Interfaces     Interfaces `json:"interfaces"`
-	Kernel         string     `json:"kernel"`
-	MachineID      string     `json:"machine_id"`
-	OSRelease      OSRelease  `json:"os_release"`
-	Virtualization string     `json:"virtualization"`
+// SystemFacts holds the system facts.
+type SystemFacts struct {
+	Architecture   string
+	BootID         string
+	Hostname       string
+	Interfaces     Interfaces
+	Kernel         string
+	MachineID      string
+	OSRelease      OSRelease
+	Virtualization string
 
 	mu sync.Mutex
 }
 
 // OSRelease holds the OS release facts.
 type OSRelease struct {
-	Name       string `json:"name"`
-	ID         string `json:"id"`
-	PrettyName string `json:"pretty_name"`
-	Version    string `json:"version"`
-	VersionID  string `json:"version_id"`
+	Name       string
+	ID         string
+	PrettyName string
+	Version    string
+	VersionID  string
 }
 
 // Interfaces holds the network facts.
@@ -39,14 +39,14 @@ type Interfaces map[string]Interface
 
 // Interface holds facts for a single interface.
 type Interface struct {
-	Name         string   `json:"name"`
-	Index        int      `json:"index"`
-	HardwareAddr string   `json:"hardware_address"`
-	IpAddresses  []string `json:"ip_addresses"`
+	Name         string
+	Index        int
+	HardwareAddr string
+	IpAddresses  []string
 }
 
-func Run() *Facts {
-	facts := new(Facts)
+func getSystemFacts() *SystemFacts {
+	facts := new(SystemFacts)
 	var wg sync.WaitGroup
 
 	wg.Add(3)
@@ -58,7 +58,7 @@ func Run() *Facts {
 	return facts
 }
 
-func (f *Facts) getOSRelease(wg *sync.WaitGroup) {
+func (f *SystemFacts) getOSRelease(wg *sync.WaitGroup) {
 	defer wg.Done()
 	osReleaseFile, err := os.Open("/etc/os-release")
 	if err != nil {
@@ -90,7 +90,7 @@ func (f *Facts) getOSRelease(wg *sync.WaitGroup) {
 	return
 }
 
-func (f *Facts) getInterfaces(wg *sync.WaitGroup) {
+func (f *SystemFacts) getInterfaces(wg *sync.WaitGroup) {
 	defer wg.Done()
 	ls, err := net.Interfaces()
 	if err != nil {
@@ -123,7 +123,7 @@ func (f *Facts) getInterfaces(wg *sync.WaitGroup) {
 	return
 }
 
-func (f *Facts) getHostnamectl(wg *sync.WaitGroup) {
+func (f *SystemFacts) getHostnamectl(wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	var out bytes.Buffer

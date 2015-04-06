@@ -4,6 +4,16 @@ Inspired by Puppet Labs Facter, but written in Go.
 
 ## Usage
 
+Print a single fact
+
+```
+terminus --format '{{.System.Hostname}}'
+```
+
+```
+CoreOS
+```
+
 ```
 terminus
 ```
