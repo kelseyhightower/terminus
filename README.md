@@ -1,8 +1,10 @@
 # Terminus
 
-Inspired by Puppet Labs Facter, but written in Go.
+Get facts about a Linux system.
 
 ## Usage
+
+Terminus ships with a default set of facts that represent info about the system. Terminus also supports [custom facts](docs/custom-facts.md).
 
 ### Print a single fact
 
