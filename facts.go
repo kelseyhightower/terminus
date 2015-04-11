@@ -31,8 +31,16 @@ type SystemFacts struct {
 	OSRelease    OSRelease
 	Swap         Swap
 	Uptime       int64
+	LoadAverage  LoadAverage
 
 	mu sync.Mutex
+}
+
+// Holds the load average facts.
+type LoadAverage struct {
+	One  uint64
+	Five uint64
+	Ten  uint64
 }
 
 // Date holds the date facts.
@@ -143,6 +151,10 @@ func (f *SystemFacts) getSysInfo(wg *sync.WaitGroup) {
 	f.Swap.Free = info.Freeswap
 
 	f.Uptime = info.Uptime
+
+	f.LoadAverage.One = info.Loads[0]
+	f.LoadAverage.Five = info.Loads[1]
+	f.LoadAverage.Ten = info.Loads[2]
 
 	return
 }
