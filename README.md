@@ -4,63 +4,86 @@ Inspired by Puppet Labs Facter, but written in Go.
 
 ## Usage
 
-Print a single fact
+### Print a single fact
 
 ```
-terminus --format '{{.System.Hostname}}'
+terminus --format '{{.System.BootID}}'
 ```
 
 ```
-CoreOS
+029b978a8d0b4ac48c5ca9c92956eeb6
 ```
+
+### Print all facts
 
 ```
 terminus
 ```
 ```
 {
-   "system": {
-     "architecture": "x86_64",
-     "boot_id": "7e4bed2a4cb04f47b344c45c2aabc6f2",
-     "hostname": "ubuntu",
-     "interfaces": {
-       "docker0": {
-         "name": "docker0",
-         "index": 3,
-         "hardware_address": "56:84:7a:fe:97:99",
-         "ip_addresses": [
-           "172.17.42.1/16"
-         ]
-       },
-       "eth0": {
-         "name": "eth0",
-         "index": 2,
-         "hardware_address": "00:0c:29:ca:67:76",
-         "ip_addresses": [
-           "192.168.12.139/16",
-           "fe80::20c:29ff:feca:6776/64"
-         ]
-       },
-       "lo": {
-         "name": "lo",
-         "index": 1,
-         "hardware_address": "",
-         "ip_addresses": [
-           "127.0.0.1/8",
-           "::1/128"
-         ]
+   "System": {
+     "Architecture": "x86_64",
+     "BootID": "e9e1695b-4c87-40fe-b701-d19dc262fc25",
+     "Date": {
+       "Unix": 1428781730,
+       "UTC": "2015-04-11 19:48:50.291769492 +0000 UTC"
+     },
+     "Domainname": "(none)",
+     "Hostname": "ubuntu",
+     "Network": {
+       "Interfaces": {
+         "docker0": {
+           "Name": "docker0",
+           "Index": 3,
+           "HardwareAddr": "56:84:7a:fe:97:99",
+           "IpAddresses": [
+             "172.17.42.1/16"
+           ]
+         },
+         "eth0": {
+           "Name": "eth0",
+           "Index": 2,
+           "HardwareAddr": "00:0c:29:ca:67:76",
+           "IpAddresses": [
+             "192.168.12.139/16",
+             "fe80::20c:29ff:feca:6776/64"
+           ]
+         },
+         "lo": {
+           "Name": "lo",
+           "Index": 1,
+           "HardwareAddr": "",
+           "IpAddresses": [
+             "127.0.0.1/8",
+             "::1/128"
+           ]
+         }
        }
      },
-     "kernel": "Linux 3.19.0-031900rc6-generic",
-     "machine_id": "3ca6d0646855f7cc6480630a54ac4a20",
-     "os_release": {
-       "name": "Ubuntu",
-       "id": "ubuntu",
-       "pretty_name": "Ubuntu 14.10",
-       "version": "14.10 (Utopic Unicorn)",
-       "version_id": "14.10"
+     "Kernel": {
+       "Name": "Linux",
+       "Release": "3.19.0-031900rc6-generic",
+       "Version": "#201501261152 SMP Mon Jan 26 16:53:27 UTC 2015"
      },
-     "virtualization": ""
+     "MachineID": "3ca6d0646855f7cc6480630a54ac4a20",
+     "Memory": {
+       "Total": 1024004096,
+       "Free": 727904256,
+       "Shared": 684032,
+       "Buffered": 24641536
+     },
+     "OSRelease": {
+       "Name": "Ubuntu",
+       "ID": "ubuntu",
+       "PrettyName": "Ubuntu 14.10",
+       "Version": "14.10 (Utopic Unicorn)",
+       "VersionID": "14.10"
+     },
+     "Swap": {
+       "Total": 4294963200,
+       "Free": 4294963200
+     },
+     "Uptime": 12673
    }
- }
+}
 ```
