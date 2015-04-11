@@ -2,6 +2,13 @@
 
 Get facts about a Linux system.
 
+## Install
+
+```
+wget https://github.com/kelseyhightower/terminus/releases/download/v0.0.1/terminus
+chmod +x terminus
+```
+
 ## Usage
 
 Terminus ships with a default set of facts that represent info about the system. Terminus also supports [custom facts](docs/custom-facts.md) and a [HTTP API](docs/api.md).
