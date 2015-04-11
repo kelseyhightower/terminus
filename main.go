@@ -17,15 +17,15 @@ var (
 	externalFactsDir string
 	format           string
 	formatFile       string
-	daemon           bool
+	httpAddr         string
 )
 
 func init() {
 	log.SetFlags(0)
-	flag.BoolVar(&daemon, "daemon", false, "Run in daemon mode.")
 	flag.StringVar(&externalFactsDir, "external-facts-dir", defaultExternalFacts, "Path to external facts directory.")
 	flag.StringVar(&format, "format", "", "Format the output using the given go template.")
 	flag.StringVar(&formatFile, "format-file", "", "Format the output using the given go template file.")
+	flag.StringVar(&httpAddr, "http", "", "HTTP service address (e.g., ':6060')")
 }
 
 var defaultExternalFacts = "/etc/terminus/facts.d"
@@ -33,9 +33,9 @@ var defaultExternalFacts = "/etc/terminus/facts.d"
 func main() {
 	flag.Parse()
 
-	if daemon {
+	if httpAddr != "" {
 		http.Handle("/facts", httpHandler(factsHandler))
-		log.Fatal(http.ListenAndServe(":8080", nil))
+		log.Fatal(http.ListenAndServe(httpAddr, nil))
 	}
 
 	f := getFacts()
