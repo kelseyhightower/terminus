@@ -1,6 +1,6 @@
 # Terminus
 
-Get facts about a Linux system.
+Get facts about a Linux system. Parallel execution, structured output, remote API.
 
 ## Install
 
