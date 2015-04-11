@@ -4,6 +4,33 @@ There are two types of custom facts: executable and static. Custom facts are sto
 
 ## Executable Facts
 
+Executable facts can be written in any language and reside under the external facts directory with the executable bit set.
+
+### Example
+
+```
+sudo vim /etc/terminus/facts.d/date
+```
+
+```
+#!/bin/bash
+
+echo "{\"Now\": \"$(date)\"}"
+exit 0
+```
+
+```
+sudo chmod +x /etc/terminus/facts.d/date
+```
+
+```
+terminus -format '{{.date.Now}}'
+```
+
+```
+Sat Apr 11 13:38:26 PDT 2015
+```
+
 ## Static Facts
 
 Static facts must be in the JSON format and reside under the external facts directory with a `.json` file extension.
