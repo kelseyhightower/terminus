@@ -6,9 +6,11 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -32,6 +34,30 @@ type SystemFacts struct {
 	Swap         Swap
 	Uptime       int64
 	LoadAverage  LoadAverage
+
+	mu sync.Mutex
+}
+
+// EC2Facts holds EC2 instance metadata facts.
+type EC2Facts struct {
+	// TODO(michaelbaamonde) BlockDeviceMapping, IAM.
+	AmiID            string
+	AmiLaunchIndex   int
+	AmiManifestPath  string
+	AvailabilityZone string
+	Hostname         string
+	InstanceAction   string
+	InstanceID       string
+	InstanceType     string
+	KernelID         string
+	LocalHostname    string
+	LocalIPV4        string
+	MAC              string
+	Profile          string
+	PublicHostname   string
+	PublicIPV4       string
+	ReservationID    string
+	SecurityGroups   []string
 
 	mu sync.Mutex
 }
@@ -99,6 +125,10 @@ func getFacts() *facts.Facts {
 	f := facts.New()
 	systemFacts := getSystemFacts()
 	f.Add("System", systemFacts)
+	if isEC2() {
+		ec2Facts := getEC2Facts()
+		f.Add("EC2", ec2Facts)
+	}
 	processExternalFacts(externalFactsDir, f)
 	return f
 }
@@ -286,6 +316,100 @@ func (f *SystemFacts) getUname(wg *sync.WaitGroup) {
 	f.Kernel.Release = charsToString(buf.Release)
 	f.Kernel.Version = charsToString(buf.Version)
 	return
+}
+
+const EC2MetadataEndpoint = "http://169.254.169.254/latest/meta-data"
+
+func isEC2() bool {
+	timeout := time.Duration(50 * time.Millisecond)
+	client := http.Client{
+		Timeout: timeout,
+	}
+	_, err := client.Get(EC2MetadataEndpoint)
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+func getEC2Facts() *EC2Facts {
+	facts := new(EC2Facts)
+	var wg sync.WaitGroup
+
+	endpoints := []string{
+		"ami-id",
+		"ami-launch-index",
+		"ami-manifest-path",
+		"hostname",
+		"instance-action",
+		"instance-id",
+		"instance-type",
+		"kernel-id",
+		"local-hostname",
+		"local-ipv4",
+		"mac",
+		"network/",
+		"placement/availability-zone",
+		"profile",
+		"public-hostname",
+		"public-ipv4",
+		"reservation-id",
+		"security-groups",
+	}
+
+	var fields = struct {
+		sync.Mutex
+		m map[string]string
+	}{m: make(map[string]string)}
+
+	for _, e := range endpoints {
+		wg.Add(1)
+		go func(e string) {
+			defer wg.Done()
+			url := EC2MetadataEndpoint + "/" + e
+			resp, err := http.Get(url)
+			if err != nil {
+				log.Println(err.Error())
+			}
+			bytes, err := ioutil.ReadAll(resp.Body)
+			resp.Body.Close()
+			if err != nil {
+				log.Println(err.Error())
+			}
+			fields.Lock()
+			fields.m[e] = string(bytes[:])
+			fields.Unlock()
+		}(e)
+	}
+
+	wg.Wait()
+
+	facts.mu.Lock()
+	defer facts.mu.Unlock()
+
+	facts.AmiID = fields.m["ami-id"]
+	i, err := strconv.Atoi(fields.m["ami-launch-index"])
+	if err != nil {
+		log.Println(err.Error())
+	}
+	facts.AmiLaunchIndex = i
+	facts.AmiManifestPath = fields.m["ami-manifest-path"]
+	facts.AvailabilityZone = fields.m["placement/availability-zone"]
+	facts.InstanceID = fields.m["instance-id"]
+	facts.Hostname = fields.m["hostname"]
+	facts.InstanceAction = fields.m["instance-action"]
+	facts.InstanceType = fields.m["instance-type"]
+	facts.KernelID = fields.m["kernel-id"]
+	facts.LocalHostname = fields.m["local-hostname"]
+	facts.LocalIPV4 = fields.m["local-ipv4"]
+	facts.MAC = fields.m["mac"]
+	facts.Profile = fields.m["profile"]
+	facts.PublicHostname = fields.m["public-hostname"]
+	facts.PublicIPV4 = fields.m["public-ipv4"]
+	facts.ReservationID = fields.m["reservation-id"]
+	facts.SecurityGroups = strings.Split(fields.m["security-groups"], "\n")
+
+	return facts
 }
 
 func processExternalFacts(dir string, f *facts.Facts) {
