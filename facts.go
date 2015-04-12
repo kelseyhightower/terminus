@@ -19,69 +19,69 @@ import (
 
 // SystemFacts holds the system facts.
 type SystemFacts struct {
-	Architecture string
-	BootID       string
-	Date         Date
-	Domainname   string
-	Hostname     string
-	Network      Network
-	Kernel       Kernel
-	MachineID    string
-	Memory       Memory
-	OSRelease    OSRelease
-	Swap         Swap
-	Uptime       int64
-	LoadAverage  LoadAverage
+	Architecture string      `json:"architecture"`
+	BootID       string      `json:"bootID"`
+	Date         Date        `json:"date"`
+	Domainname   string      `json:"domainName"`
+	Hostname     string      `json:"hostName"`
+	Network      Network     `json:"network"`
+	Kernel       Kernel      `json:"kernel"`
+	MachineID    string      `json:"machineID"`
+	Memory       Memory      `json:"memory"`
+	OSRelease    OSRelease   `json:"osRelease"`
+	Swap         Swap        `json:"swap"`
+	Uptime       int64       `json:"uptime"`
+	LoadAverage  LoadAverage `json:"loadAverage"`
 
 	mu sync.Mutex
 }
 
 // Holds the load average facts.
 type LoadAverage struct {
-	One  uint64
-	Five uint64
-	Ten  uint64
+	One  uint64 `json:"one"`
+	Five uint64 `json:"five"`
+	Ten  uint64 `json:"ten"`
 }
 
 // Date holds the date facts.
 type Date struct {
-	Unix int64
-	UTC  string
+	Unix int64  `json:"unix"`
+	UTC  string `json:"UTC"`
 }
 
 // Swap holds the swap facts.
 type Swap struct {
-	Total uint64
-	Free  uint64
+	Total uint64 `json:"total"`
+	Free  uint64 `json:"free"`
 }
 
 // OSRelease holds the OS release facts.
 type OSRelease struct {
-	Name       string
-	ID         string
-	PrettyName string
-	Version    string
-	VersionID  string
+	Name       string `json:"name"`
+	ID         string `json:"id"`
+	PrettyName string `json:"prettyName"`
+	Version    string `json:"version"`
+	VersionID  string `json:"versionID"`
 }
 
 // Kernel holds the kernel facts.
 type Kernel struct {
-	Name    string
-	Release string
-	Version string
+	Name    string `json:"name"`
+	Release string `json:"release"`
+	Version string `json:"version"`
 }
 
 // Memory holds the memory facts.
 type Memory struct {
-	Total    uint64
-	Free     uint64
-	Shared   uint64
-	Buffered uint64
+	Total    uint64 `json:"total"`
+	Free     uint64 `json:"free"`
+	Shared   uint64 `json:"shared"`
+	Buffered uint64 `json:"buffered"`
 }
 
 // Network holds the network facts.
 type Network struct {
-	Interfaces Interfaces
+	Interfaces Interfaces `json:"interfaces"`
 }
 
 // Interfaces holds the interface facts.
@@ -89,10 +89,10 @@ type Interfaces map[string]Interface
 
 // Interface holds facts for a single interface.
 type Interface struct {
-	Name         string
-	Index        int
-	HardwareAddr string
-	IpAddresses  []string
+	Name         string   `json:"name"`
+	Index        int      `json:"index"`
+	HardwareAddr string   `json:"hardwareAddr"`
+	IpAddresses  []string `json:"ipAddresses"`
 }
 
 func getFacts() *facts.Facts {
