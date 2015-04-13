@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"io/ioutil"
 	"log"
@@ -9,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -32,6 +34,7 @@ type SystemFacts struct {
 	Swap         Swap
 	Uptime       int64
 	LoadAverage  LoadAverage
+	FileSystems  FileSystems
 
 	mu sync.Mutex
 }
@@ -95,6 +98,19 @@ type Interface struct {
 	IpAddresses  []string
 }
 
+// FileSystems holds the Filesystem facts.
+type FileSystems map[string]FileSystem
+
+// FileSystem holds facts for a filesystem (man fstab).
+type FileSystem struct {
+	Device     string
+	MountPoint string
+	Type       string
+	Options    []string
+	DumpFreq   uint64
+	PassNo     uint64
+}
+
 func getFacts() *facts.Facts {
 	f := facts.New()
 	systemFacts := getSystemFacts()
@@ -107,7 +123,7 @@ func getSystemFacts() *SystemFacts {
 	facts := new(SystemFacts)
 	var wg sync.WaitGroup
 
-	wg.Add(7)
+	wg.Add(8)
 	go facts.getOSRelease(&wg)
 	go facts.getInterfaces(&wg)
 	go facts.getBootID(&wg)
@@ -115,6 +131,7 @@ func getSystemFacts() *SystemFacts {
 	go facts.getUname(&wg)
 	go facts.getSysInfo(&wg)
 	go facts.getDate(&wg)
+	go facts.getFileSystems(&wg)
 
 	wg.Wait()
 	return facts
@@ -285,6 +302,53 @@ func (f *SystemFacts) getUname(wg *sync.WaitGroup) {
 	f.Kernel.Name = charsToString(buf.Sysname)
 	f.Kernel.Release = charsToString(buf.Release)
 	f.Kernel.Version = charsToString(buf.Version)
+	return
+}
+
+func (f *SystemFacts) getFileSystems(wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	mtab, err := ioutil.ReadFile("/etc/mtab")
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
+
+	fsMap := make(FileSystems)
+
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	s := bufio.NewScanner(bytes.NewBuffer(mtab))
+	for s.Scan() {
+		line := s.Text()
+		if string(line[0]) == "#" {
+			continue
+		}
+		fields := strings.Fields(s.Text())
+		fs := FileSystem{}
+		fs.Device = fields[0]
+		fs.MountPoint = fields[1]
+		fs.Type = fields[2]
+		fs.Options = strings.Split(fields[3], ",")
+		dumpFreq, err := strconv.ParseUint(fields[4], 10, 64)
+		if err != nil {
+			log.Println(err.Error())
+			return
+		}
+		fs.DumpFreq = dumpFreq
+
+		passNo, err := strconv.ParseUint(fields[4], 10, 64)
+		if err != nil {
+			log.Println(err.Error())
+			return
+		}
+		fs.PassNo = passNo
+
+		fsMap[fs.Device] = fs
+	}
+
+	f.FileSystems = fsMap
 	return
 }
 
