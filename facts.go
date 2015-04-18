@@ -190,19 +190,21 @@ func (f *SystemFacts) getOSRelease(wg *sync.WaitGroup) {
 	scanner := bufio.NewScanner(osReleaseFile)
 	for scanner.Scan() {
 		columns := strings.Split(scanner.Text(), "=")
-		key := columns[0]
-		value := strings.Trim(strings.TrimSpace(columns[1]), `"`)
-		switch key {
-		case "NAME":
-			f.OSRelease.Name = value
-		case "ID":
-			f.OSRelease.ID = value
-		case "PRETTY_NAME":
-			f.OSRelease.PrettyName = value
-		case "VERSION":
-			f.OSRelease.Version = value
-		case "VERSION_ID":
-			f.OSRelease.VersionID = value
+		if len(columns) > 1 {
+			key := columns[0]
+			value := strings.Trim(strings.TrimSpace(columns[1]), `"`)
+			switch key {
+			case "NAME":
+				f.OSRelease.Name = value
+			case "ID":
+				f.OSRelease.ID = value
+			case "PRETTY_NAME":
+				f.OSRelease.PrettyName = value
+			case "VERSION":
+				f.OSRelease.Version = value
+			case "VERSION_ID":
+				f.OSRelease.VersionID = value
+			}
 		}
 	}
 	return
