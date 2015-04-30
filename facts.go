@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -10,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -32,8 +34,17 @@ type SystemFacts struct {
 	OSRelease    OSRelease
 	Swap         Swap
 	Uptime       int64
+	LoadAverage  LoadAverage
+	FileSystems  FileSystems
 
 	mu sync.Mutex
+}
+
+// Holds the load average facts.
+type LoadAverage struct {
+	One  uint64
+	Five uint64
+	Ten  uint64
 }
 
 // Date holds the date facts.
@@ -102,6 +113,19 @@ type Ip6Address struct {
 	Prefix int
 }
 
+// FileSystems holds the Filesystem facts.
+type FileSystems map[string]FileSystem
+
+// FileSystem holds facts for a filesystem (man fstab).
+type FileSystem struct {
+	Device     string
+	MountPoint string
+	Type       string
+	Options    []string
+	DumpFreq   uint64
+	PassNo     uint64
+}
+
 func getFacts() *facts.Facts {
 	f := facts.New()
 	systemFacts := getSystemFacts()
@@ -114,7 +138,7 @@ func getSystemFacts() *SystemFacts {
 	facts := new(SystemFacts)
 	var wg sync.WaitGroup
 
-	wg.Add(7)
+	wg.Add(8)
 	go facts.getOSRelease(&wg)
 	go facts.getInterfaces(&wg)
 	go facts.getBootID(&wg)
@@ -122,6 +146,7 @@ func getSystemFacts() *SystemFacts {
 	go facts.getUname(&wg)
 	go facts.getSysInfo(&wg)
 	go facts.getDate(&wg)
+	go facts.getFileSystems(&wg)
 
 	wg.Wait()
 	return facts
@@ -159,6 +184,10 @@ func (f *SystemFacts) getSysInfo(wg *sync.WaitGroup) {
 
 	f.Uptime = info.Uptime
 
+	f.LoadAverage.One = info.Loads[0]
+	f.LoadAverage.Five = info.Loads[1]
+	f.LoadAverage.Ten = info.Loads[2]
+
 	return
 }
 
@@ -176,19 +205,21 @@ func (f *SystemFacts) getOSRelease(wg *sync.WaitGroup) {
 	scanner := bufio.NewScanner(osReleaseFile)
 	for scanner.Scan() {
 		columns := strings.Split(scanner.Text(), "=")
-		key := columns[0]
-		value := strings.Trim(strings.TrimSpace(columns[1]), `"`)
-		switch key {
-		case "NAME":
-			f.OSRelease.Name = value
-		case "ID":
-			f.OSRelease.ID = value
-		case "PRETTY_NAME":
-			f.OSRelease.PrettyName = value
-		case "VERSION":
-			f.OSRelease.Version = value
-		case "VERSION_ID":
-			f.OSRelease.VersionID = value
+		if len(columns) > 1 {
+			key := columns[0]
+			value := strings.Trim(strings.TrimSpace(columns[1]), `"`)
+			switch key {
+			case "NAME":
+				f.OSRelease.Name = value
+			case "ID":
+				f.OSRelease.ID = value
+			case "PRETTY_NAME":
+				f.OSRelease.PrettyName = value
+			case "VERSION":
+				f.OSRelease.Version = value
+			case "VERSION_ID":
+				f.OSRelease.VersionID = value
+			}
 		}
 	}
 	return
@@ -307,6 +338,53 @@ func (f *SystemFacts) getUname(wg *sync.WaitGroup) {
 	f.Kernel.Name = charsToString(buf.Sysname)
 	f.Kernel.Release = charsToString(buf.Release)
 	f.Kernel.Version = charsToString(buf.Version)
+	return
+}
+
+func (f *SystemFacts) getFileSystems(wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	mtab, err := ioutil.ReadFile("/etc/mtab")
+	if err != nil {
+		log.Println(err.Error())
+		return
+	}
+
+	fsMap := make(FileSystems)
+
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	s := bufio.NewScanner(bytes.NewBuffer(mtab))
+	for s.Scan() {
+		line := s.Text()
+		if string(line[0]) == "#" {
+			continue
+		}
+		fields := strings.Fields(s.Text())
+		fs := FileSystem{}
+		fs.Device = fields[0]
+		fs.MountPoint = fields[1]
+		fs.Type = fields[2]
+		fs.Options = strings.Split(fields[3], ",")
+		dumpFreq, err := strconv.ParseUint(fields[4], 10, 64)
+		if err != nil {
+			log.Println(err.Error())
+			return
+		}
+		fs.DumpFreq = dumpFreq
+
+		passNo, err := strconv.ParseUint(fields[4], 10, 64)
+		if err != nil {
+			log.Println(err.Error())
+			return
+		}
+		fs.PassNo = passNo
+
+		fsMap[fs.Device] = fs
+	}
+
+	f.FileSystems = fsMap
 	return
 }
 
