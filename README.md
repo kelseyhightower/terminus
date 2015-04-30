@@ -32,30 +32,36 @@ terminus
 {
    "System": {
      "Architecture": "x86_64",
-     "BootID": "e9e1695b-4c87-40fe-b701-d19dc262fc25",
+     "BootID": "87c81966-9e09-4627-b949-6320ae09ecfa",
      "Date": {
-       "Unix": 1428781730,
-       "UTC": "2015-04-11 19:48:50.291769492 +0000 UTC"
+       "Unix": 1430413811,
+       "UTC": "2015-04-30 17:10:11.736735078 +0000 UTC"
      },
      "Domainname": "(none)",
-     "Hostname": "ubuntu",
+     "Hostname": "etcd",
      "Network": {
        "Interfaces": {
-         "docker0": {
-           "Name": "docker0",
-           "Index": 3,
-           "HardwareAddr": "56:84:7a:fe:97:99",
-           "IpAddresses": [
-             "172.17.42.1/16"
-           ]
-         },
-         "eth0": {
-           "Name": "eth0",
+         "eno16777736": {
+           "Name": "eno16777736",
            "Index": 2,
-           "HardwareAddr": "00:0c:29:ca:67:76",
+           "HardwareAddr": "00:0c:29:d6:9c:9a",
            "IpAddresses": [
-             "192.168.12.139/16",
-             "fe80::20c:29ff:feca:6776/64"
+             "192.168.12.10/16",
+             "fe80::20c:29ff:fed6:9c9a/64"
+           ],
+           "Ip4Addresses": [
+             {
+               "CIDR": "192.168.12.10/16",
+               "Ip": "192.168.12.10",
+               "Netmask": "255.255.0.0"
+             }
+           ],
+           "Ip6Addresses": [
+             {
+               "CIDR": "fe80::20c:29ff:fed6:9c9a/64",
+               "Ip": "fe80::20c:29ff:fed6:9c9a",
+               "Prefix": 64
+             }
            ]
          },
          "lo": {
@@ -65,34 +71,48 @@ terminus
            "IpAddresses": [
              "127.0.0.1/8",
              "::1/128"
+           ],
+           "Ip4Addresses": [
+             {
+               "CIDR": "127.0.0.1/8",
+               "Ip": "127.0.0.1",
+               "Netmask": "255.0.0.0"
+             }
+           ],
+           "Ip6Addresses": [
+             {
+               "CIDR": "::1/128",
+               "Ip": "::1",
+               "Prefix": 128
+             }
            ]
          }
        }
      },
      "Kernel": {
        "Name": "Linux",
-       "Release": "3.19.0-031900rc6-generic",
-       "Version": "#201501261152 SMP Mon Jan 26 16:53:27 UTC 2015"
+       "Release": "4.0.0",
+       "Version": "#2 SMP Wed Apr 22 23:43:22 UTC 2015"
      },
-     "MachineID": "3ca6d0646855f7cc6480630a54ac4a20",
+     "MachineID": "677f2a9b43c343aa993ef4a282ba2f05",
      "Memory": {
-       "Total": 1024004096,
-       "Free": 727904256,
-       "Shared": 684032,
-       "Buffered": 24641536
+       "Total": 1029615616,
+       "Free": 683864064,
+       "Shared": 184950784,
+       "Buffered": 23953408
      },
      "OSRelease": {
-       "Name": "Ubuntu",
-       "ID": "ubuntu",
-       "PrettyName": "Ubuntu 14.10",
-       "Version": "14.10 (Utopic Unicorn)",
-       "VersionID": "14.10"
+       "Name": "CoreOS",
+       "ID": "coreos",
+       "PrettyName": "CoreOS 660.0.0",
+       "Version": "660.0.0",
+       "VersionID": "660.0.0"
      },
      "Swap": {
-       "Total": 4294963200,
-       "Free": 4294963200
+       "Total": 0,
+       "Free": 0
      },
-     "Uptime": 12673
+     "Uptime": 4927
    }
-}
+ }
 ```

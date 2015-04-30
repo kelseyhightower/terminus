@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
@@ -85,6 +86,20 @@ type Interface struct {
 	Index        int
 	HardwareAddr string
 	IpAddresses  []string
+	Ip4Addresses []Ip4Address
+	Ip6Addresses []Ip6Address
+}
+
+type Ip4Address struct {
+	CIDR    string
+	Ip      string
+	Netmask string
+}
+
+type Ip6Address struct {
+	CIDR   string
+	Ip     string
+	Prefix int
 }
 
 func getFacts() *facts.Facts {
@@ -235,23 +250,42 @@ func (f *SystemFacts) getInterfaces(wg *sync.WaitGroup) {
 	m := make(Interfaces)
 	for _, i := range ls {
 		ipaddreses := make([]string, 0)
+		ip4addrs := make([]Ip4Address, 0)
+		ip6addrs := make([]Ip6Address, 0)
+
 		addrs, err := i.Addrs()
 		if err != nil {
 			log.Println(err.Error())
 			return
 		}
 		for _, ip := range addrs {
-			ipaddreses = append(ipaddreses, ip.String())
+			cidr := ip.String()
+			ipaddreses = append(ipaddreses, cidr)
+			ip, ipnet, _ := net.ParseCIDR(cidr)
+			if ip.To4() != nil {
+				ip4addrs = append(ip4addrs, Ip4Address{cidr, ip.String(), toNetmask(ipnet.Mask)})
+				continue
+			}
+			if ip.To16() != nil {
+				ones, _ := ipnet.Mask.Size()
+				ip6addrs = append(ip6addrs, Ip6Address{cidr, ip.String(), ones})
+			}
 		}
 		m[i.Name] = Interface{
 			Name:         i.Name,
 			Index:        i.Index,
 			HardwareAddr: i.HardwareAddr.String(),
 			IpAddresses:  ipaddreses,
+			Ip4Addresses: ip4addrs,
+			Ip6Addresses: ip6addrs,
 		}
 	}
 	f.Network.Interfaces = m
 	return
+}
+
+func toNetmask(m net.IPMask) string {
+	return fmt.Sprintf("%d.%d.%d.%d", m[0], m[1], m[2], m[3])
 }
 
 func (f *SystemFacts) getUname(wg *sync.WaitGroup) {
