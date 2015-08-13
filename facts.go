@@ -128,8 +128,12 @@ type FileSystem struct {
 
 func getFacts() *facts.Facts {
 	f := facts.New()
-	systemFacts := getSystemFacts()
-	f.Add("System", systemFacts)
+	if format == "" || (format != "" && strings.Contains(format, ".System")) {
+		systemFacts := getSystemFacts()
+		f.Add("System", systemFacts)
+	} else {
+		fmt.Println("Ignoring System")
+	}
 	processExternalFacts(externalFactsDir, f)
 	return f
 }
@@ -406,13 +410,18 @@ func processExternalFacts(dir string, f *facts.Facts) {
 	staticFacts := make([]string, 0)
 
 	for _, fi := range files {
-		name := filepath.Join(dir, fi.Name())
-		if isExecutable(fi) {
-			executableFacts = append(executableFacts, name)
-			continue
-		}
-		if strings.HasSuffix(name, ".json") {
-			staticFacts = append(staticFacts, name)
+		fact := fmt.Sprintf(".%s", strings.TrimSuffix(fi.Name(), ".json"))
+		if format == "" || (format != "" && strings.Contains(format, fact)) {
+			name := filepath.Join(dir, fi.Name())
+			if isExecutable(fi) {
+				executableFacts = append(executableFacts, name)
+				continue
+			}
+			if strings.HasSuffix(name, ".json") {
+				staticFacts = append(staticFacts, name)
+			}
+		} else {
+			log.Printf("Ignoring %s\n", fi.Name())
 		}
 	}
 
