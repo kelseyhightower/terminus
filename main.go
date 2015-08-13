@@ -19,6 +19,7 @@ var (
 	formatFile       string
 	httpAddr         string
 	printVersion     bool
+	debug            bool
 )
 
 func init() {
@@ -28,6 +29,7 @@ func init() {
 	flag.StringVar(&formatFile, "format-file", "", "Format the output using the given go template file.")
 	flag.StringVar(&httpAddr, "http", "", "HTTP service address (e.g., ':6060')")
 	flag.BoolVar(&printVersion, "version", false, "print version and exit")
+	flag.BoolVar(&debug, "debug", false, "print errors to stderr instead of ignoring them")
 }
 
 var defaultExternalFacts = "/etc/terminus/facts.d"
