@@ -47,6 +47,13 @@ func main() {
 
 	f := getFacts()
 
+	// If there are any flags left over, use the first as a fact request
+	// and create a "format" out of it.
+	if len(flag.Args()) > 0 {
+		args := flag.Args()
+		format = fmt.Sprintf("{{%s}}", args[0])
+	}
+
 	if format != "" {
 		tmpl, err := template.New("format").Parse(format)
 		if err != nil {

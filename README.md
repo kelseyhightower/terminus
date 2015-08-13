@@ -16,10 +16,14 @@ Terminus ships with a default set of facts that represent info about the system.
 ### Print a single fact
 
 ```
-terminus --format '{{.System.BootID}}'
+$ terminus --format '{{.System.BootID}}'
+029b978a8d0b4ac48c5ca9c92956eeb6
 ```
 
+or
+
 ```
+$ terminus .System.BootID
 029b978a8d0b4ac48c5ca9c92956eeb6
 ```
 
