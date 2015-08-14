@@ -16,11 +16,15 @@ Terminus ships with a default set of facts that represent info about the system.
 ### Print a single fact
 
 ```
-terminus --format '{{.System.BootID}}'
+$ terminus --format '{{.System.BootID}}'
+029b978a8d0b4ac48c5ca9c92956eeb6
 ```
 
+or
+
 ```
-029b978a8d0b4ac48c5ca9c92956eeb6
+$ terminus System.Network.Interfaces.eth0.Ip6Addresses.0.Ip
+fe80::f816:3eff:fead:8549
 ```
 
 ### Print all facts

@@ -10,6 +10,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 	"text/template"
 )
 
@@ -67,6 +69,60 @@ func main() {
 		err = tmpl.Execute(os.Stdout, &f.Facts)
 		if err != nil {
 			log.Fatal(err)
+		}
+		os.Exit(0)
+	}
+
+	// If there are arguments left over, use the first argument as a fact query.
+	if len(flag.Args()) > 0 {
+		var data interface{}
+		var value interface{}
+		path := flag.Args()[0]
+		path_pieces := strings.Split(path, ".")
+
+		// Convert the Fact structure into a generic interface{}
+		// by first converting it to JSON and then unmarshaling it.
+		j, err := json.Marshal(&f.Facts)
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = json.Unmarshal(j, &data)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		// Walk through the given path.
+		// If there's a result, print it.
+		for _, p := range path_pieces {
+			i, err := strconv.Atoi(p)
+			if err != nil {
+				if _, ok := data.(map[string]interface{}); ok {
+					value = data.(map[string]interface{})[p]
+				}
+			} else {
+				if _, ok := data.([]interface{}); ok {
+					if len(data.([]interface{})) >= i {
+						value = data.([]interface{})[i]
+					}
+				}
+			}
+			data = value
+		}
+		if value != nil {
+			// if the value is an []interface{} or map[string]interface{}, convert it to JSON
+			if _, ok := value.([]interface{}); ok {
+				if j, err := json.Marshal(value); err == nil {
+					fmt.Println(string(j))
+				}
+			} else {
+				if _, ok := value.(map[string]interface{}); ok {
+					if j, err := json.Marshal(value); err == nil {
+						fmt.Println(string(j))
+					}
+				} else {
+					fmt.Println(value)
+				}
+			}
 		}
 		os.Exit(0)
 	}
